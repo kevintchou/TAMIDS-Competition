@@ -1,4 +1,4 @@
-setwd('~/Documents/TAMIDS Competition')
+setwd('~/Documents/TAMIDS Taxi Data')
 
 library(data.table)
 library(dplyr)
@@ -6,7 +6,6 @@ library(magrittr)
 library(MASS)
 library(ggplot2)
 library(gridExtra)
-library(grep)
 
 ## Notes
 # taxi 2013 has ~ 33.5 million rows
@@ -15,7 +14,7 @@ library(grep)
 # taxi 2016 has ~ 19.9 million rows
 # taxi 2016 has ~ 7.68 million rows
 #
-# Currently using a 2% random subset of the full data
+# Currently using a 1% random subset of the full data
 
 taxi_2013 <- fread('subset_2013.csv')
 taxi_2014 <- fread('subset_2014.csv')
@@ -28,6 +27,11 @@ View(taxi_2014)
 View(taxi_2015)
 View(taxi_2016)
 View(taxi_2017)
+
+taxi_2013[, 12 := NULL]
+
+taxi_df <- data.table(rbindlist(list(taxi_2013, taxi_2014, taxi_2015, taxi_2016)),
+                      Year = rep(c(2013, 2014, 2015, 2016), times = c(nrow(taxi_2013), nrow(taxi_2014), nrow(taxi_2015), nrow(taxi_2016))))
 
 ## Earnings by company
 # 2013
@@ -156,4 +160,104 @@ g16 <- data.table(Year = rep(c(2013, 2014, 2015, 2016, 2017), times = c(nrow(tax
 
 g16
 
+## Trip Duration Analysis
+# Density of trip duration
+g17 <- taxi_2013[, .(TripDuration = V5)] %>%
+  ggplot(aes(x = TripDuration)) +
+  geom_histogram(stat = 'bin', fill = 'steelblue') +
+  ylab('Density') +
+  labs(x = 'Trip Duration (seconds)', title = '2013') +
+  xlim(0, 4000)
 
+g18 <- taxi_2014[, .(TripDuration = V5)] %>%
+  ggplot(aes(x = TripDuration)) +
+  geom_histogram(stat = 'bin', fill = 'steelblue') +
+  ylab('Density') +
+  labs(x = 'Trip Duration (seconds)', title = '2014') +
+  xlim(0, 4000)
+
+g19 <- taxi_2015[, .(TripDuration = V5)] %>%
+  ggplot(aes(x = TripDuration)) +
+  geom_histogram(stat = 'bin', fill = 'steelblue') +
+  ylab('Density') +
+  labs(x = 'Trip Duration (seconds)', title = '2015') +
+  xlim(0, 4000)
+
+g20 <- taxi_2016[, .(TripDuration = V5)] %>%
+  ggplot(aes(x = TripDuration)) +
+  geom_histogram(stat = 'bin', fill = 'steelblue') +
+  ylab('Density') +
+  labs(x = 'Trip Duration (seconds)', title = '2016') +
+  xlim(0, 4000)
+
+g21 <- taxi_2017[, .(TripDuration = V5)] %>%
+  ggplot(aes(x = TripDuration)) +
+  geom_histogram(stat = 'bin', fill = 'steelblue') +
+  ylab('Density') +
+  labs(x = 'Trip Duration (seconds)', title = '2017') +
+  xlim(0, 4000)
+grid.arrange(g17, g18, g19, g20, g21, nrow = 2)
+
+# Trip duration over time
+date_time_2013 <- strptime(taxi_2013$V3, format = '%m/%d/%Y %H:%M:%S %p')
+date_time_2014 <- strptime(taxi_2014$V3, format = '%m/%d/%Y %H:%M:%S %p')
+date_time_2015 <- strptime(taxi_2015$V3, format = '%m/%d/%Y %H:%M:%S %p')
+date_time_2016 <- strptime(taxi_2016$V3, format = '%m/%d/%Y %H:%M:%S %p')
+date_time_2017 <- strptime(taxi_2017$V3, format = '%m/%d/%Y %H:%M:%S %p')
+
+# Month
+g22 <- taxi_2013[, .(TripDuration = V5, Month = strftime(date_time_2013, '%m'))] %>%
+  ggplot(aes(x = Month, y = TripDuration)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  labs(x = '', y = 'Trip Duration (seconds)', title = '2013')
+
+g23 <- taxi_2014[, .(TripDuration = V5, Month = strftime(date_time_2014, '%m'))] %>%
+  ggplot(aes(x = Month, y = TripDuration)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  labs(x = '', y = 'Trip Duration (seconds)', title = '2014')
+
+g24 <- taxi_2015[, .(TripDuration = V5, Month = strftime(date_time_2015, '%m'))] %>%
+  ggplot(aes(x = Month, y = TripDuration)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  labs(x = '', y = 'Trip Duration (seconds)', title = '2015')
+
+g25 <- taxi_2016[, .(TripDuration = V5, Month = strftime(date_time_2016, '%m'))] %>%
+  ggplot(aes(x = Month, y = TripDuration)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  labs(x = '', y = 'Trip Duration (seconds)', title = '2016')
+
+g26 <- taxi_2017[, .(TripDuration = V5, Month = strftime(date_time_2017, '%m'))] %>%
+  ggplot(aes(x = Month, y = TripDuration)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  labs(x = '', y = 'Trip Duration (seconds)', title = '2017')
+grid.arrange(g22, g23, g24, g25, g26, nrow = 2)
+
+# Hour -- need to split by am/pm also
+g27 <- taxi_2013[, .(TripDuration = V5, Month = strftime(date_time_2013, '%H'))] %>%
+  ggplot(aes(x = Month, y = TripDuration)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  labs(x = '', y = 'Trip Duration (seconds)', title = '2013')
+
+g28 <- taxi_2014[, .(TripDuration = V5, Month = strftime(date_time_2014, '%H'))] %>%
+  ggplot(aes(x = Month, y = TripDuration)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  labs(x = '', y = 'Trip Duration (seconds)', title = '2014')
+
+g29 <- taxi_2015[, .(TripDuration = V5, Month = strftime(date_time_2015, '%H'))] %>%
+  ggplot(aes(x = Month, y = TripDuration)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  labs(x = '', y = 'Trip Duration (seconds)', title = '2015')
+
+g30 <- taxi_2016[, .(TripDuration = V5, Month = strftime(date_time_2016, '%H'))] %>%
+  ggplot(aes(x = Month, y = TripDuration)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  labs(x = '', y = 'Trip Duration (seconds)', title = '2016')
+
+g31 <- taxi_2017[, .(TripDuration = V5, Month = strftime(date_time_2017, '%H'))] %>%
+  ggplot(aes(x = Month, y = TripDuration)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  labs(x = '', y = 'Trip Duration (seconds)', title = '2017')
+grid.arrange(g27, g28, g29, g30, g31, nrow = 2)
+# Day of the week
+
+# Number of trips -- month, day, hour
