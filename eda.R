@@ -15,6 +15,8 @@ library(gridExtra)
 # taxi 2016 has ~ 7.68 million rows
 #
 # Currently using a 1% random subset of the full data
+# Used the following in the terminal to create the subsets
+# perl -ne 'print if (rand() < .01)' Chicago_taxi_trips_2013.csv > subset_2013.csv
 
 taxi_2013 <- fread('subset_2013.csv')
 taxi_2014 <- fread('subset_2014.csv')
