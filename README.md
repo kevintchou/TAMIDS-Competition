@@ -7,5 +7,4 @@ Interest centers on building visualizations and predictive models explaining how
 The data from 2013 through 2016 shall be used for training predictive models, while the data from 2017 shall be used for testing the efficacy of the predictive models built using the training data.  
 
 ## Links
-* [Subsetted dataset](https://drive.google.com/open?id=1-8ZPD5q667GOzpdiVtoBGP2YuASzDp0y)
 * [Competition info](http://tamids.tamu.edu/2018-tamids-data-science-competition/#overview)
