@@ -1,18 +1,26 @@
 ---
 title: "Exploratory Data Analysis - Chicago Taxi Trips"
-output: rmarkdown::github_document
+output: 
+  html_document:
+    toc: true
+    toc_float: true
 ---
+
+```{r setup, include=FALSE}
+library(knitr)
+opts_knit$set(root.dir = '~/Documents/TAMIDS Taxi Data')
+```
+
+A in-depth exploratory data analysis for the Chicago taxi dataset. In order to efficiently perform exploratory data analysis, we used a subset containing 1% of the data for each of the provided training datasets so that our subset’s yearly proportions were the same as those of the full data’s. Hourly, daily, monthly and yearly trends were compared over repeated subsets to demonstrate that the trends in each subset were representative of the full data’s trends. It should be noted that the EDA plots and summary statistics examined in this section of the report are all run on the same 1% subset.
 
 # Data
 ```{r preamble, message=FALSE}
-setwd('~/Documents/TAMIDS Taxi Data')
 library(data.table)
 library(dplyr)
 library(magrittr)
 library(MASS)
 library(ggplot2)
 library(gridExtra)
-library(knitr)
 library(kableExtra)
 ```
 
@@ -134,7 +142,8 @@ g6 <- taxi_df[, .(TripDuration = `Trip Seconds`,
   ggplot(aes(Day, TripDuration)) +
   geom_bar(stat = 'identity', fill = 'steelblue') +
   facet_wrap(~ as.factor(Year)) +
-  labs(x = '', y = 'Trip Duration (seconds)', title = 'Trip duration by day of week')
+  labs(x = '', y = 'Trip Duration (seconds)', title = 'Trip duration by day of week') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 g6
 ```
 
@@ -147,7 +156,8 @@ g7 <- taxi_df[, .(TaxiID = `Taxi ID`,
   ggplot(aes(Day, Median)) +
   geom_bar(stat = 'identity', fill = 'steelblue') +
   facet_wrap(~ as.factor(Year)) +
-  labs(x = '', y = 'Trip Duration (Seconds)', title = 'Median Trip duration by day of week ')
+  labs(x = '', y = 'Trip Duration (Seconds)', title = 'Median Trip duration by day of week ') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 g7
 ```
 
@@ -159,7 +169,8 @@ g8 <- taxi_df[, .(Day = factor(weekdays(as.Date(date_time)), levels = c('Monday'
   ggplot(aes(Day, TripCount)) +
   geom_bar(stat = 'identity', fill = 'steelblue') +
   facet_wrap(~ as.factor(Year)) +
-  labs(x = '', y = 'Trip Count', title = 'Trip count by day of week')
+  labs(x = '', y = 'Trip Count', title = 'Trip count by day of week') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 g8
 ```
 
@@ -172,7 +183,8 @@ g9 <- taxi_df[, .(TripDistance = `Trip Miles`,
   ggplot(aes(Day, TripDistance)) +
   geom_bar(stat = 'identity', fill = 'steelblue') +
   facet_wrap(~ as.factor(Year)) +
-  labs(x = '', y = 'Trip Distance (Miles)', title = 'Trip distance by day of week')
+  labs(x = '', y = 'Trip Distance (Miles)', title = 'Trip distance by day of week') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 g9
 ```
 
@@ -185,7 +197,8 @@ g10 <- taxi_df[, .(TaxiID = `Taxi ID`,
   ggplot(aes(Day, Median)) +
   geom_bar(stat = 'identity', fill = 'steelblue') +
   facet_wrap(~ as.factor(Year)) +
-  labs(x = '', y = 'Trip Distance (Miles)', title = 'Median Trip distance by day of week')
+  labs(x = '', y = 'Trip Distance (Miles)', title = 'Median Trip distance by day of week') +
+  theme(axis.text.x = element_text(angle = 90, hjust = 1))
 g10
 ```
 
