@@ -8,6 +8,7 @@ The data from 2013 through 2016 shall be used for training predictive models, wh
 
 ## Links
 * [Competition info](http://tamids.tamu.edu/2018-tamids-data-science-competition/#overview)
+* [Subsetted Data](https://drive.google.com/open?id=1cFgq4giDQih78XvahQ_RjD60ObF-yUOS)
 * [Pickup Density (Year)](https://streamable.com/756m1)
 * [Pickup Density (Month)](https://streamable.com/tv476)
 * [Pickup Density (Day)](https://streamable.com/sa3ak)
