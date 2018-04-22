@@ -1,0 +1,258 @@
+---
+title: "Exploratory Data Analysis - Chicago Taxi Trips"
+output: rmarkdown::github_document
+---
+
+# Data
+```{r preamble, message=FALSE}
+setwd('~/Documents/TAMIDS Taxi Data')
+library(data.table)
+library(dplyr)
+library(magrittr)
+library(MASS)
+library(ggplot2)
+library(gridExtra)
+library(knitr)
+library(kableExtra)
+```
+
+```{r data, message=FALSE}
+taxi_2013 <- fread('subset_2013.csv')
+taxi_2014 <- fread('subset_2014.csv')
+taxi_2015 <- fread('subset_2015.csv')
+taxi_2016 <- fread('subset_2016.csv')
+taxi_2017 <- fread('subset_2017.csv')
+
+taxi_2013[, 12 := NULL]
+names(taxi_2014) <- names(taxi_2013)
+names(taxi_2015) <- names(taxi_2013)
+names(taxi_2016) <- names(taxi_2013)
+names(taxi_2017) <- names(taxi_2013)
+
+taxi_df <- data.table(rbindlist(list(taxi_2013, taxi_2014, taxi_2015, taxi_2016)),
+                      Year = rep(c(2013, 2014, 2015, 2016), times = c(nrow(taxi_2013), nrow(taxi_2014), nrow(taxi_2015), nrow(taxi_2016))))
+
+taxi_df <- na.omit(taxi_df)
+taxi_2017 <- na.omit(taxi_2017)
+```
+
+Note that we have an extra column in the taxi_2013 data so we removed it.
+
+## Previewing the data
+```{r preview, echo=FALSE}
+kable(head(taxi_df), "html") %>%
+  kable_styling() %>%
+  scroll_box(width = "1000px", height = "500px")
+```
+
+# Analysis of predictors over time
+Before we begin let's create some datetime variables for our time.
+```{r datetime}
+date_time_2013 <- strptime(taxi_2013$`Trip Start Timestamp`, format = '%m/%d/%Y %I:%M:%S %p')
+date_time_2014 <- strptime(taxi_2014$`Trip Start Timestamp`, format = '%m/%d/%Y %I:%M:%S %p')
+date_time_2015 <- strptime(taxi_2015$`Trip Start Timestamp`, format = '%m/%d/%Y %I:%M:%S %p')
+date_time_2016 <- strptime(taxi_2016$`Trip Start Timestamp`, format = '%m/%d/%Y %I:%M:%S %p')
+date_time <- strptime(taxi_df$`Trip Start Timestamp`, format = '%m/%d/%Y %I:%M:%S %p')
+date_time2 <- strptime(taxi_df$`Trip End Timestamp`, format = '%m/%d/%Y %I:%M:%S %p')
+
+# Add month column
+taxi_df[, Month := as.numeric(strftime(date_time, '%m'))]
+```
+
+## By Month
+Let's begin by doing a breakdown by the month of year. 
+
+### Trip Duration
+The first variable we want to examine is trip duration and how it varies from month to month.
+```{r trip duration month, warning=FALSE}
+g1 <- taxi_df[, .(TripDuration = `Trip Seconds`, Month), by = Year] %>%
+  ggplot(aes(Month, TripDuration)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = '', y = 'Trip Duration (Seconds)', title = 'Trip duration by month')
+g1
+```
+
+The first observation we can make is that the duration of trips increased through 2014 and then started decreasing. The general shape of the histograms have remained the same with May, June, and October having the longest trips and January having the shortest trips. This is total trip duration so let's see if that is due to a high trip count or if the general taxi ride is longer those months. We will make the same graph but this time with median taxi trip duration.
+
+```{r median trip duration month, warning=FALSE}
+g2 <- taxi_df[, .(TotalTrip = sum(`Trip Seconds`)), by = list(`Taxi ID`, Month, Year)][, .(Median = median(TotalTrip)), by = list(Month, Year)][order(Year, Month), ] %>%
+  ggplot(aes(Month, Median)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = '', y = 'Trip Duration (Seconds)', title = 'Median Trip duration by month')
+g2
+```
+
+Looking at the median trip durations, we still see that the peaks are generally in May, June, and October and that the low points are in January. The difference is not as big though.
+
+### Trip Count
+Now let's investigate the number of trips that have been taken each month.
+```{r trip count month, warning=FALSE}
+g3 <- taxi_df[, .(Month), by = Year][, .(TripCount = .N), by = c('Year', 'Month')] %>%
+  ggplot(aes(Month, TripCount)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = 'Month', y = 'Trip Count', title = 'Trip count by month')
+g3
+```
+
+We can see that the trip count follows the same trend as trip duration, where 2014 is the higheest and procees to decrease every year after. We can still find that May, June, and October are the peak months and January is the low.
+
+### Trip Distance
+The last variable we want to look into is the trip distance for each month.
+```{r trip distance month, warning=FALSE}
+g4 <- taxi_df[, .(TripDistance = `Trip Miles`, Month), by = Year] %>%
+  ggplot(aes(Month, TripDistance)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = 'Month', y = 'Distance', title = 'Distance travelled by month')
+g4
+```
+
+The total trip distances increased from 2013-2014, but then decreases every year after. January appears to still be the low month, however, May, June, and October don't appear to be distinguishable peaks anymore. Now let's take a look at the median trip distance.
+
+```{r median trip distance month, warning=FALSE}
+g5 <- taxi_df[, .(TotalTrip = sum(`Trip Miles`)), by = list(`Taxi ID`, Month, Year)][, .(Median = median(TotalTrip)), by = list(Month, Year)][order(Year, Month), ] %>%
+  ggplot(aes(Month, Median)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = '', y = 'Trip Distance (Miles)', title = 'Median Trip distance by month')
+g5
+```
+
+The median trip distance shows a large spike from 2013-2014 and then a large decrease from 2015-2016.  
+
+## By Day of the week
+We now do a closer inspection on the same variables, but now we look at the trends by the day of the week.
+
+### Trip Duration
+We will start with trip duration again.
+```{r trip duration day, warning=FALSE}
+g6 <- taxi_df[, .(TripDuration = `Trip Seconds`,
+                   Day = factor(weekdays(as.Date(date_time)), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))), by = Year] %>%
+  ggplot(aes(Day, TripDuration)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = '', y = 'Trip Duration (seconds)', title = 'Trip duration by day of week')
+g6
+```
+
+We see that trips duration is the most on Fridays and Saturdays for all years. Like our previous analysis with trip duration by month, we want to also look at the median trip duration to assess individual rides.
+
+```{r trip duration median day, warning=FALSE}
+g7 <- taxi_df[, .(TaxiID = `Taxi ID`,
+                  TripDuration = `Trip Seconds`,
+                  Day = factor(weekdays(as.Date(date_time)), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))), by = Year][, .(TotalTrip = sum(TripDuration)), by = list(TaxiID, Day, Year)][, .(Median = median(TotalTrip)), by = list(Day, Year)] %>%
+  ggplot(aes(Day, Median)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = '', y = 'Trip Duration (Seconds)', title = 'Median Trip duration by day of week ')
+g7
+```
+
+The median trip duration seems to follow the same trend as total trip duration, having the high points on Fridays and Saturdays, so we can expect individual taxi trip durations to behave in this pattern. It makes sense that Friday and Saturday see the longest trip durations as that is when people are more likely to go out and grab drinks or travel to the to and from the airport.
+
+### Trip Count
+```{r trip count day, warning=FALSE}
+g8 <- taxi_df[, .(Day = factor(weekdays(as.Date(date_time)), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))), by = Year][, .(TripCount = .N), by = c('Year', 'Day')] %>%
+  ggplot(aes(Day, TripCount)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = '', y = 'Trip Count', title = 'Trip count by day of week')
+g8
+```
+
+As expected, the trip count follows the same trend as the total trip duration and also the median trip duration with the peaks being on Friday and Saturdays.
+
+### Trip Distance
+```{r trip distance day, warning=FALSE}
+g9 <- taxi_df[, .(TripDistance = `Trip Miles`,
+                   Day = factor(weekdays(as.Date(date_time)), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))), by = Year] %>%
+  ggplot(aes(Day, TripDistance)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = '', y = 'Trip Distance (Miles)', title = 'Trip distance by day of week')
+g9
+```
+
+The trip distance peaks on Fridays and Saturdays but one interesting thing is the trip distance has seemed to increase over the years while the trip count stayed the same across all years. Let's see if the median trip distance increases also.
+
+```{r median trip distance day, warning=FALSE}
+g10 <- taxi_df[, .(TaxiID = `Taxi ID`,
+                  TripDistance = `Trip Miles`,
+                  Day = factor(weekdays(as.Date(date_time)), levels = c('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'))), by = Year][, .(TotalTrip = sum(TripDistance)), by = list(TaxiID, Day, Year)][, .(Median = median(TotalTrip)), by = list(Day, Year)] %>%
+  ggplot(aes(Day, Median)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = '', y = 'Trip Distance (Miles)', title = 'Median Trip distance by day of week')
+g10
+```
+
+Not much appears to change in this plot except that the 2013 median trip distance is very low.
+
+## By Hour of day
+Lastly we want to break it down even further and analyze trends by the hour of any day.
+
+### Trip Duration
+```{r trip duration hour, warning=FALSE}
+g11 <- taxi_df[, .(TripDuration = `Trip Seconds`, Hour = strftime(date_time, '%H')), by = Year] %>%
+  ggplot(aes(Hour, TripDuration)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = 'Hour', y = 'Trip Duration (seconds)', title = 'Trip duration by hour of day')
+g11
+```
+
+6pm and 7pm appears to be the peaks for trip duration for all years and there appears to be only a slight increase in trip duration after 2013. Let's take a look at the median trip duration.
+
+```{r median trip duration hour, warning=FALSE}
+g12 <- taxi_df[, .(TripDuration = `Trip Seconds`,
+                   Hour = strftime(date_time, '%H')), by = Year] %>%
+  ggplot(aes(Hour, TripDuration)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = '', y = 'Trip Duration (seconds)', title = 'Median Trip duration by hour of day')
+g12
+```
+
+
+### Trip Count
+```{r trip count hour, warning=FALSE}
+g13 <- taxi_df[, .(Hour = strftime(date_time, '%H')), by = Year][, .(TripCount = .N), by = c('Year', 'Hour')] %>%
+  ggplot(aes(Hour, TripCount)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = 'Hour', y = 'Trip Count', title = 'Trip count by hour of day')
+g13
+```
+
+
+### Trip Distance
+```{r trip distance hour, warning=FALSE}
+g14 <- taxi_df[, .(TripDistance = `Trip Miles`, Hour = strftime(date_time, '%H')), by = Year] %>%
+  ggplot(aes(Hour, TripDistance)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = 'Hour', y = 'Trip Distance (Miles)', title = 'Trip distance by hour of day')
+g14
+```
+
+And the median trip distance.
+
+```{r median trip distance hour, warning=FALSE}
+g15 <- taxi_df[, .(TaxiID = `Taxi ID`,
+                  TripDistance = `Trip Miles`,
+                  Hour = strftime(date_time, '%H')), by = Year][, .(TotalTrip = sum(TripDistance)), by = list(TaxiID, Hour, Year)][, .(Median = median(TotalTrip)), by = list(Hour, Year)] %>%
+  ggplot(aes(Hour, Median)) +
+  geom_bar(stat = 'identity', fill = 'steelblue') +
+  facet_wrap(~ as.factor(Year)) +
+  labs(x = '', y = 'Trip Distance (Miles)', title = 'Median Trip distance by hour of day')
+g15
+```
+
+
+
+
+
+
